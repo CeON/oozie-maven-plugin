@@ -1,0 +1,22 @@
+<component-set>
+	<components>
+		<component>
+			<role>org.apache.maven.lifecycle.mapping.LifecycleMapping</role>
+			<role-hint>oozie</role-hint>
+			<implementation>
+				org.apache.maven.lifecycle.mapping.DefaultLifecycleMapping
+			</implementation>
+			<configuration>
+				<phases>
+					<package>pl.edu.icm.maven:oozie-maven-plugin:package</package>
+					<install>
+						org.apache.maven.plugins:maven-install-plugin:install
+					</install>
+					<deploy>
+						org.apache.maven.plugins:maven-resources-plugin:resources
+					</deploy>
+				</phases>
+			</configuration>
+		</component>
+	</components>
+</component-set>
