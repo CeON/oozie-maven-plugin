@@ -94,7 +94,8 @@ public class PackageMojo extends AbstractMojo {
 				configuration(
 						element(name("outputDirectory"),
 								"${project.build.directory}/oozie-wf-tmp/lib/"),
-						element(name("excludeClassifiers"), "oozie-wf")),
+						element(name("excludeClassifiers"), "oozie-wf"),
+						element(name("excludeScope"), "provided")),
 				environment);
 
 		executeMojo(
