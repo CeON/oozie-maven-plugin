@@ -25,10 +25,10 @@ import org.twdata.maven.mojoexecutor.MojoExecutor.ExecutionEnvironment;
 @Mojo(name = "package", requiresDependencyResolution = ResolutionScope.COMPILE)
 public class PackageMojo extends AbstractMojo {
 
-	private final static String MAVEN_DEPENDENCY_PLUGIN_VERSION = "2.7";
-	private final static String MAVEN_CLEAN_PLUGIN_VERSION = "2.5";
-	private final static String MAVEN_RESOURCES_PLUGIN_VERSION = "2.6";
-	private final static String MAVEN_ASSEMBLY_PLUGIN_VERSION = "2.3";
+	private static final String MAVEN_DEPENDENCY_PLUGIN_VERSION = "2.7";
+	private static final String MAVEN_CLEAN_PLUGIN_VERSION = "2.5";
+	private static final String MAVEN_RESOURCES_PLUGIN_VERSION = "2.6";
+	private static final String MAVEN_ASSEMBLY_PLUGIN_VERSION = "2.3";
 
 	@Component
 	private MavenProject mavenProject;
