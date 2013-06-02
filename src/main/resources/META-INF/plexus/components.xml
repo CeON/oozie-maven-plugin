@@ -8,7 +8,25 @@
 			</implementation>
 			<configuration>
 				<phases>
+					<process-test-resources>
+						org.apache.maven.plugins:maven-resources-plugin:2.5:testResources
+					</process-test-resources>
+					<test-compile>
+						org.apache.maven.plugins:maven-compiler-plugin:2.3.2:testCompile
+					</test-compile>
+					<prepare-package>pl.edu.icm.maven:oozie-maven-plugin:prepare-package
+					</prepare-package>
 					<package>pl.edu.icm.maven:oozie-maven-plugin:package</package>
+					<pre-integration-test>pl.edu.icm.maven:oozie-maven-plugin:pre-integration-test
+					</pre-integration-test>
+					<integration-test>pl.edu.icm.maven:oozie-maven-plugin:integration-test
+					</integration-test>
+					<!-- <integration-test>org.apache.maven.plugins:maven-failsafe-plugin:2.14.1:integration-test 
+						</integration-test> -->
+					<post-integration-test>pl.edu.icm.maven:oozie-maven-plugin:post-integration-test
+					</post-integration-test>
+					<verify>org.apache.maven.plugins:maven-failsafe-plugin:verify
+					</verify>
 					<install>
 						org.apache.maven.plugins:maven-install-plugin:install
 					</install>

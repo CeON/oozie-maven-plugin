@@ -4,137 +4,84 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.element;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.groupId;
-import static org.twdata.maven.mojoexecutor.MojoExecutor.name;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.BuildPluginManager;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
-import org.twdata.maven.mojoexecutor.MojoExecutor.ExecutionEnvironment;
 
 @Mojo(name = "package", requiresDependencyResolution = ResolutionScope.COMPILE)
-public class PackageMojo extends AbstractMojo {
+public class PackageMojo extends AbstractOozieMojo {
 
-	private static final String MAVEN_DEPENDENCY_PLUGIN_VERSION = "2.7";
-	private static final String MAVEN_CLEAN_PLUGIN_VERSION = "2.5";
-	private static final String MAVEN_RESOURCES_PLUGIN_VERSION = "2.6";
-	private static final String MAVEN_ASSEMBLY_PLUGIN_VERSION = "2.3";
-
-	@Component
-	private MavenProject mavenProject;
-
-	@Component
-	private MavenSession mavenSession;
-
-	@Component
-	private BuildPluginManager pluginManager;
-
-	@Parameter(property = "package.assemblyDescriptor", defaultValue = "src/main/assembly/assembly.xml")
-	private String assemblyDescriptor;
-
-	@Parameter(property = "package.oozieDirectory", defaultValue = "src/main/oozie/")
-	private String oozieDirectory;
-
+	@Override
 	public void execute() throws MojoExecutionException {
+		super.execute();
+		packageWorkflow();
+		packageJob();
+	}
 
-		ExecutionEnvironment environment = executionEnvironment(mavenProject,
-				mavenSession, pluginManager);
+	private void packageJob() throws MojoExecutionException {
 
-		executeMojo(
-				plugin(groupId("org.apache.maven.plugins"),
-						artifactId("maven-dependency-plugin"),
-						version(MAVEN_DEPENDENCY_PLUGIN_VERSION)),
-				goal("unpack-dependencies"),
-				configuration(
-						element(name("outputDirectory"),
-								"${project.build.directory}/oozie-wf-tmp/"),
-						element(name("includeClassifiers"), "oozie-wf"),
-						element(name("excludeTransitive"), "true")),
-				environment);
+		if (!jobPackage) {
+			getLog().info("Ozzie job package has not been created.");
+			return;
+		}
 
-		/*
-		 * This step can be omitted when the following problem with "exclude"
-		 * option for tar.gz files http://jira.codehaus.org/browse/MDEP-242 for
-		 * maven-dependency-plugin is resolved. Instead the 'exclude' option
-		 * should be used in previous step.
-		 */
-		executeMojo(
-				plugin(groupId("org.apache.maven.plugins"),
-						artifactId("maven-clean-plugin"),
-						version(MAVEN_CLEAN_PLUGIN_VERSION)),
-				goal("clean"),
-				configuration(
-						element(name("excludeDefaultDirectories"), "true"),
-						element(name("filesets"),
-								element(name("fileset"),
-										element(name("directory"),
-												"${project.build.directory}/oozie-wf-tmp/"),
-										element(name("includes"),
-												element(name("include"),
-														"**/lib/*"),
-												element(name("include"),
-														"**/lib/"))))),
-				environment);
-
-		executeMojo(
-				plugin(groupId("org.apache.maven.plugins"),
-						artifactId("maven-dependency-plugin"),
-						version(MAVEN_DEPENDENCY_PLUGIN_VERSION)),
-				goal("copy-dependencies"),
-				configuration(
-						element(name("outputDirectory"),
-								"${project.build.directory}/oozie-wf-tmp/lib/"),
-						element(name("excludeClassifiers"), "oozie-wf"),
-						element(name("excludeScope"), "provided")),
-				environment);
-
-		executeMojo(
-				plugin(groupId("org.apache.maven.plugins"),
-						artifactId("maven-resources-plugin"),
-						version(MAVEN_RESOURCES_PLUGIN_VERSION)),
-				goal("copy-resources"),
-				configuration(
-						element("outputDirectory",
-								"${project.build.directory}/oozie-wf-tmp/"),
-						element("resources",
-								element("resource",
-										element("directory", oozieDirectory),
-										element("filtering", "true")))
-
-				), environment);
+		try {
+			copyFileFromClasspathToFileSystem("assemblies/jobPackage.xml",
+					buildDirectory + "/assemblies/jobPackage.xml");
+		} catch (IOException e) {
+			throw new MojoExecutionException("Assembly has not been copied", e);
+		}
 
 		executeMojo(
 				plugin(groupId("org.apache.maven.plugins"),
 						artifactId("maven-assembly-plugin"),
-						version(MAVEN_ASSEMBLY_PLUGIN_VERSION)),
+						version(OoziePluginConstants.MAVEN_ASSEMBLY_PLUGIN_VERSION)),
 				goal("single"),
-				configuration(element("descriptors",
-						element("descriptor", assemblyDescriptor))),
+				configuration(element(
+						"descriptors",
+						element("descriptor",
+								"${project.build.directory}/assemblies/jobPackage.xml"))),
 				environment);
+
+	}
+
+	private void packageWorkflow() throws MojoExecutionException {
+
+		try {
+			copyFileFromClasspathToFileSystem("assemblies/workflowPackage.xml",
+					buildDirectory + "/assemblies/workflowPackage.xml");
+		} catch (IOException e) {
+			throw new MojoExecutionException("Assembly has not been copied", e);
+		}
 
 		executeMojo(
 				plugin(groupId("org.apache.maven.plugins"),
-						artifactId("maven-clean-plugin"),
-						version(MAVEN_CLEAN_PLUGIN_VERSION)),
-				goal("clean"),
-				configuration(
-						element(name("excludeDefaultDirectories"), "true"),
-						element(name("filesets"),
-								element(name("fileset"),
-										element(name("directory"),
-												"${project.build.directory}/oozie-wf-tmp/"),
-										element(name("includes"),
-												element(name("include"), "**"))))),
+						artifactId("maven-assembly-plugin"),
+						version(OoziePluginConstants.MAVEN_ASSEMBLY_PLUGIN_VERSION)),
+				goal("single"),
+				configuration(element(
+						"descriptors",
+						element("descriptor",
+								"${project.build.directory}/assemblies/workflowPackage.xml"))),
 				environment);
+
+	}
+
+	private void copyFileFromClasspathToFileSystem(String src, String dst)
+			throws IOException {
+		InputStream is = this.getClass().getClassLoader()
+				.getResourceAsStream(src);
+		File fileDst = new File(dst);
+		FileUtils.copyInputStreamToFile(is, fileDst);
 	}
 }
