@@ -8,7 +8,7 @@ public class OoziePluginConstants {
     public static final String MAVEN_DEPENDENCY_PLUGIN_VERSION = "2.7";
     public static final String MAVEN_ASSEMBLY_PLUGIN_VERSION = "2.3";
     public static final String HDFS_URI = "nameNode";
-    public static final String HDFS_WF_WORKING_DIR = "hdfsWfWorkingDir";
+    public static final String HDFS_WORKING_DIR_URI = "hdfsWorkingDirURI";
     public static final String WF_DIR = "wfDir";
     public static final String HDFS_USER_NAME = "hdfsUserName";
     public static final String OOZIE_WF_CLASSIFIER = "oozie-wf";

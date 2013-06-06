@@ -21,18 +21,18 @@ public class PostIntegrationTestMojo extends AbstractIntegrationTestMojo {
         super.execute();
 
         if (!skipCleanIT) {
-            Path hdfsWfWorkingDirPath = new Path(hdfsWfWorkingDir);
+            Path hdfsWorkingDirPath = new Path(hdfsWorkingDirURI);
             try {
-                hdfsFS.delete(hdfsWfWorkingDirPath, true);
+                hdfsFS.delete(hdfsWorkingDirPath, true);
             } catch (IOException e) {
                 throw new MojoExecutionException(
                         "A problem has occured during deleting "
-                        + hdfsWfWorkingDirPath.toUri() + " from HDFS "
+                        + hdfsWorkingDirPath.toUri() + " from HDFS "
                         + hdfsURI.toString(), e);
             }
         } else {
             getLog().info(
-                    "Working directory " + hdfsWfWorkingDir + " within HDFS "
+                    "Working directory " + hdfsWorkingDirURI + " within HDFS "
                     + hdfsURI.toString() + " has not been deleted.");
         }
 

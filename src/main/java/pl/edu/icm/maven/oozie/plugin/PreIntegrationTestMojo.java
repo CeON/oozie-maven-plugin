@@ -1,8 +1,11 @@
 package pl.edu.icm.maven.oozie.plugin;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -17,21 +20,21 @@ public class PreIntegrationTestMojo extends AbstractIntegrationTestMojo {
 			getLog().info("Tests are skipped");
 			return;
 		}
-                
+
                 super.execute();
 
 		try {
 			Path src = new Path(buildDirectory + "/"
 					+ OoziePluginConstants.OOZIE_WF_PREPARE_PACKAGE_DIR);
 
-			Path hdfsWfWorkingDirPath = new Path(hdfsWfWorkingDir);
-			if (hdfsFS.exists(hdfsWfWorkingDirPath)) {
+			Path hdfsWorkingDirPath = new Path(hdfsWorkingDirURI);
+			if (hdfsFS.exists(hdfsWorkingDirPath)) {
 				throw new MojoExecutionException("Path "
-						+ hdfsWfWorkingDirPath.toUri() + " exists within HDFS "
+						+ hdfsWorkingDirPath.toUri() + " exists within HDFS "
 						+ hdfsURI.toString());
 			}
 
-			Path dst = new Path(hdfsWfWorkingDir + wfDir);
+			Path dst = new Path(hdfsWorkingDirURI + "/" + wfDir);
 			hdfsFS.copyFromLocalFile(src, dst);
 		} catch (IOException e) {
 			throw new MojoExecutionException(

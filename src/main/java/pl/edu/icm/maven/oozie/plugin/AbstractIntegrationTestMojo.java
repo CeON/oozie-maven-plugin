@@ -20,7 +20,7 @@ import org.springframework.util.PropertyPlaceholderHelper;
 public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
 
     protected URI hdfsURI;
-    protected String hdfsWfWorkingDir;
+    protected String hdfsWorkingDirURI;
     protected String hdfsUserName;
     protected String wfDir;
     protected FileSystem hdfsFS;
@@ -55,10 +55,10 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
             throw new MojoExecutionException("HDFS URI cannot be parsed.", e);
         }
 
-        hdfsWfWorkingDir = envConf.getProperty(OoziePluginConstants.HDFS_WF_WORKING_DIR);
-        if (hdfsWfWorkingDir == null) {
+        hdfsWorkingDirURI = envConf.getProperty(OoziePluginConstants.HDFS_WORKING_DIR_URI);
+        if (hdfsWorkingDirURI == null) {
             throw new MojoExecutionException("Property "
-                    + OoziePluginConstants.HDFS_WF_WORKING_DIR
+                    + OoziePluginConstants.HDFS_WORKING_DIR_URI
                     + " cannot be empty.");
         }
 
