@@ -12,12 +12,13 @@ public class PreIntegrationTestMojo extends AbstractIntegrationTestMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException {
-		super.execute();
 
 		if (skipTests || skipITs) {
 			getLog().info("Tests are skipped");
 			return;
 		}
+                
+                super.execute();
 
 		try {
 			Path src = new Path(buildDirectory + "/"
