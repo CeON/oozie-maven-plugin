@@ -14,7 +14,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-@Mojo(name = "integration-test", requiresDependencyResolution = ResolutionScope.COMPILE)
+@Mojo(name = "integration-test", requiresDependencyResolution = ResolutionScope.TEST)
 public class IntegrationTestMojo extends AbstractOozieMojo {
 
 	public void execute() throws MojoExecutionException {

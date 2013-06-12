@@ -10,7 +10,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
-@Mojo(name = "pre-integration-test", requiresDependencyResolution = ResolutionScope.COMPILE)
+@Mojo(name = "pre-integration-test", requiresDependencyResolution = ResolutionScope.TEST)
 public class PreIntegrationTestMojo extends AbstractIntegrationTestMojo {
 
 	@Override
