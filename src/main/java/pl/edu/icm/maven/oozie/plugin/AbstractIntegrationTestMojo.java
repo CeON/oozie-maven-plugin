@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.springframework.util.PropertyPlaceholderHelper;
@@ -48,11 +49,16 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
             System.setProperty("HADOOP_USER_NAME", hdfsUserName);
         }
 
-        String hdfsURIName = envConf.getProperty(OoziePluginConstants.HDFS_URI);
+        String hdfsURIName = envConf.getProperty(OoziePluginConstants.NAME_NODE);
+        if (! hdfsURIName.startsWith("hdfs://")) {
+            hdfsURIName = "hdfs://" + hdfsURIName;
+        }
         try {
             hdfsURI = new URI(hdfsURIName);
         } catch (URISyntaxException e) {
-            throw new MojoExecutionException("HDFS URI cannot be parsed.", e);
+            throw new MojoExecutionException("Property " + OoziePluginConstants.NAME_NODE + " cannot be parsed.", e);
+        } catch (NullPointerException e) {
+            throw new MojoExecutionException("Property " + OoziePluginConstants.NAME_NODE + " is not set in " + itEnvPropertiesLocation);
         }
 
         hdfsWorkingDirURI = envConf.getProperty(OoziePluginConstants.HDFS_WORKING_DIR_URI);
@@ -139,14 +145,7 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
             throw new MojoExecutionException("Environement properties file "
                     + propertiesFileLocation + " not found in test resources.");
         } finally {
-            try {
-                if (fileReader != null) {
-                    fileReader.close();
-                }
-            } catch (IOException e) {
-                // FileReader has not been closed - not a big deal ;)
-                e.printStackTrace();
-            }
+            IOUtils.closeStream(fileReader);
         }
         return properties;
     }
