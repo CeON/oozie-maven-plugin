@@ -100,7 +100,7 @@ public class PreparePackageMojo extends AbstractOozieMojo {
 						element("resources",
 								element("resource",
 										element("directory", oozieDirectory),
-										element("filtering", "true")))
+										element("filtering", String.valueOf(filtering))))
 
 				), environment);
 
