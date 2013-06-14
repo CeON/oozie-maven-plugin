@@ -18,7 +18,12 @@ public class PostIntegrationTestMojo extends AbstractIntegrationTestMojo {
             return;
         }
 
-        super.execute();
+        try {
+            super.execute();
+        } catch (SkipTestsException ex) {
+            getLog().info("Phase post-ingegration-test skipped: " + ex.getMessage());
+            return;
+        }
 
         if (!skipCleanIT) {
             Path hdfsWorkingDirPath = new Path(hdfsWorkingDirURI);

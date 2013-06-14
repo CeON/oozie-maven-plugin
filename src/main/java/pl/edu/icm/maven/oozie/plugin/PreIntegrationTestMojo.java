@@ -1,11 +1,7 @@
 package pl.edu.icm.maven.oozie.plugin;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.apache.hadoop.fs.Path;
-import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -21,7 +17,12 @@ public class PreIntegrationTestMojo extends AbstractIntegrationTestMojo {
 			return;
 		}
 
-                super.execute();
+                try {
+                    super.execute();
+                } catch (SkipTestsException ex) {
+                    getLog().info("Phase pre-integration-test skipped: " + ex.getMessage());
+                    return;
+                }
 
 		try {
 			Path src = new Path(buildDirectory + "/"

@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
@@ -20,6 +21,13 @@ import org.springframework.util.PropertyPlaceholderHelper;
 
 public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
 
+    protected List<String> obligatoryProperties = Arrays.asList(
+            OoziePluginConstants.HDFS_USER_NAME,
+            OoziePluginConstants.NAME_NODE,
+            OoziePluginConstants.HDFS_WORKING_DIR_URI,
+            OoziePluginConstants.WF_DIR
+            );
+
     protected URI hdfsURI;
     protected String hdfsWorkingDirURI;
     protected String hdfsUserName;
@@ -29,7 +37,6 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
     @Override
     public void execute() throws MojoExecutionException {
         super.execute();
-
         initializeFieldsUsingEnvPropertiesFile();
         createHdfsFS();
     }
@@ -43,11 +50,10 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
 
         Properties envConf = loadPropertiesFromTestResources(itEnvPropertiesLocation);
         resolvePlaceholders(envConf);
+        checkProperties(envConf);
 
         hdfsUserName = envConf.getProperty(OoziePluginConstants.HDFS_USER_NAME);
-        if (hdfsUserName != null) {
-            System.setProperty("HADOOP_USER_NAME", hdfsUserName);
-        }
+        System.setProperty("HADOOP_USER_NAME", hdfsUserName);
 
         String hdfsURIName = envConf.getProperty(OoziePluginConstants.NAME_NODE);
         if (! hdfsURIName.startsWith("hdfs://")) {
@@ -57,22 +63,10 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
             hdfsURI = new URI(hdfsURIName);
         } catch (URISyntaxException e) {
             throw new MojoExecutionException("Property " + OoziePluginConstants.NAME_NODE + " cannot be parsed.", e);
-        } catch (NullPointerException e) {
-            throw new MojoExecutionException("Property " + OoziePluginConstants.NAME_NODE + " is not set in " + itEnvPropertiesLocation);
         }
 
         hdfsWorkingDirURI = envConf.getProperty(OoziePluginConstants.HDFS_WORKING_DIR_URI);
-        if (hdfsWorkingDirURI == null) {
-            throw new MojoExecutionException("Property "
-                    + OoziePluginConstants.HDFS_WORKING_DIR_URI
-                    + " cannot be empty.");
-        }
-
         wfDir = envConf.getProperty(OoziePluginConstants.WF_DIR);
-        if (wfDir == null) {
-            throw new MojoExecutionException("Property "
-                    + OoziePluginConstants.WF_DIR + " cannot be empty.");
-        }
     }
 
     private void createHdfsFS() throws MojoExecutionException {
@@ -114,6 +108,14 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
         }
     }
 
+    protected void checkProperties(Properties properties) throws MojoExecutionException {
+        for (String property : obligatoryProperties) {
+            if (!properties.containsKey(property) || properties.getProperty(property).isEmpty()) {
+                throw new MojoExecutionException("Property " + property + " must be set");
+            }
+        }
+    }
+
     protected Properties loadPropertiesFromTestResources(
             String propertiesFileLocation) throws MojoExecutionException {
 
@@ -124,15 +126,22 @@ public abstract class AbstractIntegrationTestMojo extends AbstractOozieMojo {
 
         outerloop: for (Resource testResource : testResourcesDirs) {
             File testResourceDir = new File(testResource.getDirectory());
+            if (!testResourceDir.isDirectory()) {
+                continue;
+            }
             Collection<File> testResourceFiles = FileUtils.listFiles(
                     testResourceDir, null, true);
             for (File testResourceFile : testResourceFiles) {
-                if (testResourceFile.getAbsolutePath().contains(
+                if (testResourceFile.getAbsolutePath().endsWith(
                         propertiesFileLocation)) {
                     propertiesFile = testResourceFile;
                     break outerloop;
                 }
             }
+        }
+
+        if (propertiesFile == null) {
+            throw new SkipTestsException("Properties file " + propertiesFileLocation + " does not exist");
         }
 
         Properties properties = new Properties();
