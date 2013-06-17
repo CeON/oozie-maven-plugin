@@ -44,6 +44,9 @@ public abstract class AbstractOozieMojo extends AbstractMojo {
 	@Parameter(property = "skipCleanIT", defaultValue = "false")
 	protected boolean skipCleanIT;
 
+    @Parameter(property = "filtering", defaultValue = "false")
+    protected boolean filtering;
+
 	@Override
 	public void execute() throws MojoExecutionException {
 		environment = executionEnvironment(mavenProject, mavenSession,
