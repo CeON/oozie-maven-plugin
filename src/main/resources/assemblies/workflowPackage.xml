@@ -9,11 +9,8 @@
 	<includeBaseDirectory>false</includeBaseDirectory>
 	<fileSets>
 		<fileSet>
-			<directory>${project.build.directory}/oozie-wf</directory>
+			<directory>src/main/oozie</directory>
 			<outputDirectory>${project.groupId}-${project.artifactId}</outputDirectory>
-			<excludes>
-				<exclude>lib/**</exclude>
-			</excludes>
 		</fileSet>
 	</fileSets>
 </assembly>
