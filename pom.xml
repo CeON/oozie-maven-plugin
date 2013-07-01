@@ -8,6 +8,13 @@
 	<packaging>maven-plugin</packaging>
 	<name>Apache oozie plugin</name>
 	<version>1.0-SNAPSHOT</version>
+
+    <scm>
+        <connection>scm:git:ssh://git@github.com/CeON/oozie-maven-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/CeON/oozie-maven-plugin.git</developerConnection>
+        <url>https://github.com/CeON/oozie-maven-plugin</url>
+    </scm>
+
 	<build>
 		<plugins>
 			<plugin>
