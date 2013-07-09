@@ -1,5 +1,15 @@
 package pl.edu.icm.maven.oozie.plugin;
 
+import com.google.common.io.Files;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.artifact.Artifact;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
@@ -80,6 +90,12 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                 element(name("excludeClassifiers"),
                 OoziePluginConstants.OOZIE_WF_CLASSIFIER),
                 element(name("excludeScope"), "provided")), environment);
+        
+        String mainWorkflowDirectory = buildDirectory + "/" + OoziePluginConstants.OOZIE_WF_PREPARE_PACKAGE_DIR;
+        String globalLibDirectory = mainWorkflowDirectory + "/lib/";
+        File tmpDir = Files.createTempDir();
+        tmpDir.deleteOnExit();
+        unpackPigScripts(globalLibDirectory, mainWorkflowDirectory, dependencyTree, tmpDir);
 
     }
 
@@ -113,11 +129,85 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                         goal("unpack-dependencies"),
                         configuration(
                             element(name("outputDirectory"), outputDirectory),
+                            element(name("includeGroupIds"), af.getGroupId()),
                             element(name("includeArtifactIds"), af.getArtifactId())
                         ),
                         environment);
 
                 unpackWorkflows(outputDirectory + "/" + af.getGroupId() + "-" + af.getArtifactId(), childNode);
+            }
+        }
+    }
+
+    private void unpackPigScripts(String globalLibDirectory, String currentTreePosition, DependencyNode dependencyTree, File tmpDir)
+            throws MojoExecutionException {
+
+        for (DependencyNode childNode : dependencyTree.getChildren()) {
+            Artifact af = childNode.getArtifact();
+
+            if ("jar".equals(af.getType()) && !Artifact.SCOPE_TEST.equals(af.getScope())) {
+
+                // search for pig scripts:
+                File afTmpDir = new File(tmpDir, af.getGroupId() + "-" + af.getArtifactId());
+                executeMojo(
+                        plugin(groupId("org.apache.maven.plugins"),
+                        artifactId("maven-dependency-plugin"),
+                        version(OoziePluginConstants.MAVEN_DEPENDENCY_PLUGIN_VERSION)),
+                        goal("copy-dependencies"),
+                        configuration(
+                            element(name("outputDirectory"), afTmpDir.getPath()),
+                            element(name("includeGroupIds"), af.getGroupId()),
+                            element(name("includeArtifactIds"), af.getArtifactId())
+                        ),
+                        environment);
+
+                if (!afTmpDir.isDirectory()) {
+                    throw new MojoExecutionException("unable to get artifact " + af.getGroupId() + ":" + af.getArtifactId());
+                }
+                String[] dirContent = afTmpDir.list();
+                if (dirContent.length != 1) {
+                    throw new MojoExecutionException("expected 1 file, found " + dirContent.length + " after copying " + af.getGroupId() + ":" + af.getArtifactId());
+                }
+
+                try {
+                    String artifactFile = new File(afTmpDir, dirContent[0]).getPath();
+
+                    JarFile jar = new JarFile(artifactFile);
+                    Enumeration<? extends JarEntry> entries = jar.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry entry = entries.nextElement();
+                        String name = entry.getName();
+
+                        if (name.matches("pig/.*\\.pig")) {
+
+                            File target;
+                            if (name.matches("pig/.*/.*\\.pig")) {
+                                // copy to lib directory in main workflow (not a subworkflow)
+                                target = new File(globalLibDirectory, name);
+                            } else {
+                                // copy to workflow directory
+                                target = new File(currentTreePosition, new File(name).getName());
+                            }
+                            FileUtils.forceMkdir(target.getParentFile());
+
+                            FileOutputStream output = null;
+                            try {
+                                output = new FileOutputStream(target);
+                                InputStream input = jar.getInputStream(entry);
+                                IOUtils.copy(input, output);
+                            } finally {
+                                IOUtils.closeQuietly(output);
+                            }
+                        }
+                    }
+                } catch (IOException ex) {
+                    throw new MojoExecutionException("unable to unpack jar file", ex);
+                }
+            }
+
+            if (OoziePluginConstants.OOZIE_WF_CLASSIFIER.equals(af.getClassifier())) {
+                // recursive call for a subworkflow
+                unpackPigScripts(globalLibDirectory, currentTreePosition + "/" + af.getGroupId() + "-" + af.getArtifactId(), childNode, tmpDir);
             }
         }
     }
