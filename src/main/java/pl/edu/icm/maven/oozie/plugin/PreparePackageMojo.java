@@ -90,7 +90,7 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                 element(name("excludeClassifiers"),
                 OoziePluginConstants.OOZIE_WF_CLASSIFIER),
                 element(name("excludeScope"), "provided")), environment);
-        
+
         String mainWorkflowDirectory = buildDirectory + "/" + OoziePluginConstants.OOZIE_WF_PREPARE_PACKAGE_DIR;
         String globalLibDirectory = mainWorkflowDirectory + "/lib/";
         File tmpDir = Files.createTempDir();
@@ -115,7 +115,7 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                 element("directory", oozieDirectory),
                 element("filtering", String.valueOf(filtering))))), environment);
     }
-    
+
     private void unpackWorkflows(String outputDirectory, DependencyNode dependencyTree) throws MojoExecutionException {
 
         for (DependencyNode childNode : dependencyTree.getChildren()) {
@@ -128,10 +128,9 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                         version(OoziePluginConstants.MAVEN_DEPENDENCY_PLUGIN_VERSION)),
                         goal("unpack-dependencies"),
                         configuration(
-                            element(name("outputDirectory"), outputDirectory),
-                            element(name("includeGroupIds"), af.getGroupId()),
-                            element(name("includeArtifactIds"), af.getArtifactId())
-                        ),
+                        element(name("outputDirectory"), outputDirectory),
+                        element(name("includeGroupIds"), af.getGroupId()),
+                        element(name("includeArtifactIds"), af.getArtifactId())),
                         environment);
 
                 unpackWorkflows(outputDirectory + "/" + af.getGroupId() + "-" + af.getArtifactId(), childNode);
@@ -155,53 +154,50 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                         version(OoziePluginConstants.MAVEN_DEPENDENCY_PLUGIN_VERSION)),
                         goal("copy-dependencies"),
                         configuration(
-                            element(name("outputDirectory"), afTmpDir.getPath()),
-                            element(name("includeGroupIds"), af.getGroupId()),
-                            element(name("includeArtifactIds"), af.getArtifactId())
-                        ),
+                        element(name("outputDirectory"), afTmpDir.getPath()),
+                        element(name("includeGroupIds"), af.getGroupId()),
+                        element(name("includeArtifactIds"), af.getArtifactId())),
                         environment);
 
-                if (!afTmpDir.isDirectory()) {
+                String[] dirContent;
+                if (!afTmpDir.isDirectory() || (dirContent = afTmpDir.list()).length == 0) {
                     throw new MojoExecutionException("unable to get artifact " + af.getGroupId() + ":" + af.getArtifactId());
                 }
-                String[] dirContent = afTmpDir.list();
-                if (dirContent.length != 1) {
-                    throw new MojoExecutionException("expected 1 file, found " + dirContent.length + " after copying " + af.getGroupId() + ":" + af.getArtifactId());
-                }
 
-                try {
-                    String artifactFile = new File(afTmpDir, dirContent[0]).getPath();
+                for (String artifactFile : dirContent) {
+                    String artifactPath = new File(afTmpDir, artifactFile).getPath();
+                    try {
+                        JarFile jar = new JarFile(artifactPath);
+                        Enumeration<? extends JarEntry> entries = jar.entries();
+                        while (entries.hasMoreElements()) {
+                            JarEntry entry = entries.nextElement();
+                            String name = entry.getName();
 
-                    JarFile jar = new JarFile(artifactFile);
-                    Enumeration<? extends JarEntry> entries = jar.entries();
-                    while (entries.hasMoreElements()) {
-                        JarEntry entry = entries.nextElement();
-                        String name = entry.getName();
+                            if (name.matches("pig/.*\\.pig")) {
 
-                        if (name.matches("pig/.*\\.pig")) {
+                                File target;
+                                if (name.matches("pig/.*/.*\\.pig")) {
+                                    // copy to lib directory in main workflow (not a subworkflow)
+                                    target = new File(globalLibDirectory, name);
+                                } else {
+                                    // copy to workflow directory
+                                    target = new File(currentTreePosition, new File(name).getName());
+                                }
+                                FileUtils.forceMkdir(target.getParentFile());
 
-                            File target;
-                            if (name.matches("pig/.*/.*\\.pig")) {
-                                // copy to lib directory in main workflow (not a subworkflow)
-                                target = new File(globalLibDirectory, name);
-                            } else {
-                                // copy to workflow directory
-                                target = new File(currentTreePosition, new File(name).getName());
-                            }
-                            FileUtils.forceMkdir(target.getParentFile());
-
-                            FileOutputStream output = null;
-                            try {
-                                output = new FileOutputStream(target);
-                                InputStream input = jar.getInputStream(entry);
-                                IOUtils.copy(input, output);
-                            } finally {
-                                IOUtils.closeQuietly(output);
+                                FileOutputStream output = null;
+                                try {
+                                    output = new FileOutputStream(target);
+                                    InputStream input = jar.getInputStream(entry);
+                                    IOUtils.copy(input, output);
+                                } finally {
+                                    IOUtils.closeQuietly(output);
+                                }
                             }
                         }
+                    } catch (IOException ex) {
+                        throw new MojoExecutionException("unable to unpack jar file " + artifactPath, ex);
                     }
-                } catch (IOException ex) {
-                    throw new MojoExecutionException("unable to unpack jar file", ex);
                 }
             }
 
