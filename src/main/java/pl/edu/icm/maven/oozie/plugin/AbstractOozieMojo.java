@@ -1,5 +1,7 @@
 package pl.edu.icm.maven.oozie.plugin;
 
+import java.util.Map;
+
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
 
@@ -24,13 +26,19 @@ public abstract class AbstractOozieMojo extends AbstractMojo {
 	@Component
 	protected BuildPluginManager pluginManager;
 
-        @Component
-        protected DependencyTreeBuilder dependencyTreeBuilder;
+    @Component
+    protected DependencyTreeBuilder dependencyTreeBuilder;
 
 	protected String buildDirectory;
 
 	protected ExecutionEnvironment environment;
 
+	@Parameter(property = "descriptors")
+	protected String[] descriptors;
+	
+	@Parameter(property = "ompDebbug", defaultValue = "false")
+	protected boolean omp_debbug;
+	
 	@Parameter(property = "package.oozieDirectory", defaultValue = "src/main/oozie/")
 	protected String oozieDirectory;
 
