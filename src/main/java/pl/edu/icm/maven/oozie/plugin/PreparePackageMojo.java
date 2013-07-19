@@ -1,16 +1,5 @@
 package pl.edu.icm.maven.oozie.plugin;
 
-import com.google.common.io.Files;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Enumeration;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.maven.artifact.Artifact;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.element;
@@ -21,15 +10,25 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.name;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
+import java.io.File;
+
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.shared.dependency.tree.DependencyNode;
 import org.apache.maven.shared.dependency.tree.DependencyTreeBuilderException;
 
+import pl.edu.icm.maven.oozie.plugin.pigscripts.ConfigurationReader;
+import pl.edu.icm.maven.oozie.plugin.pigscripts.PigScriptExtractor;
+
+import com.google.common.io.Files;
+
 @Mojo(name = "prepare-package", requiresDependencyResolution = ResolutionScope.COMPILE)
 public class PreparePackageMojo extends AbstractOozieMojo {
-
+	
+	PigScriptExtractor  psh = null;
+	
     @Override
     public void execute() throws MojoExecutionException {
         super.execute();
@@ -39,6 +38,8 @@ public class PreparePackageMojo extends AbstractOozieMojo {
 
     private void preparePackageJob() throws MojoExecutionException {
 
+    	psh = new PigScriptExtractor( new ConfigurationReader(descriptors, getLog()).readConfiguration() , getLog(), omp_debbug );
+    	
         if (!jobPackage && (skipTests || skipITs)) {
             getLog().info("Ozzie job package has not been prepared.");
             return;
@@ -95,8 +96,11 @@ public class PreparePackageMojo extends AbstractOozieMojo {
         String globalLibDirectory = mainWorkflowDirectory + "/lib/";
         File tmpDir = Files.createTempDir();
         tmpDir.deleteOnExit();
+        getLog().info("============================================");
+        getLog().info(" Start of Pig scripts and associated libs extraction");
         unpackPigScripts(globalLibDirectory, mainWorkflowDirectory, dependencyTree, tmpDir);
-
+        getLog().info(" End of Pig scripts and associated libs extraction");
+        getLog().info("============================================");
     }
 
     private void preparePackageWorkflow() throws MojoExecutionException {
@@ -159,46 +163,7 @@ public class PreparePackageMojo extends AbstractOozieMojo {
                         element(name("includeArtifactIds"), af.getArtifactId())),
                         environment);
 
-                String[] dirContent;
-                if (!afTmpDir.isDirectory() || (dirContent = afTmpDir.list()).length == 0) {
-                    throw new MojoExecutionException("unable to get artifact " + af.getGroupId() + ":" + af.getArtifactId());
-                }
-
-                for (String artifactFile : dirContent) {
-                    String artifactPath = new File(afTmpDir, artifactFile).getPath();
-                    try {
-                        JarFile jar = new JarFile(artifactPath);
-                        Enumeration<? extends JarEntry> entries = jar.entries();
-                        while (entries.hasMoreElements()) {
-                            JarEntry entry = entries.nextElement();
-                            String name = entry.getName();
-
-                            if (name.matches("pig/.*\\.pig")) {
-
-                                File target;
-                                if (name.matches("pig/.*/.*\\.pig")) {
-                                    // copy to lib directory in main workflow (not a subworkflow)
-                                    target = new File(globalLibDirectory, name);
-                                } else {
-                                    // copy to workflow directory
-                                    target = new File(currentTreePosition, new File(name).getName());
-                                }
-                                FileUtils.forceMkdir(target.getParentFile());
-
-                                FileOutputStream output = null;
-                                try {
-                                    output = new FileOutputStream(target);
-                                    InputStream input = jar.getInputStream(entry);
-                                    IOUtils.copy(input, output);
-                                } finally {
-                                    IOUtils.closeQuietly(output);
-                                }
-                            }
-                        }
-                    } catch (IOException ex) {
-                        throw new MojoExecutionException("unable to unpack jar file " + artifactPath, ex);
-                    }
-                }
+                psh.performExtraction(globalLibDirectory, currentTreePosition, af, afTmpDir);
             }
 
             if (OoziePluginConstants.OOZIE_WF_CLASSIFIER.equals(af.getClassifier())) {
