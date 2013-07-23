@@ -38,7 +38,7 @@ public class PreparePackageMojo extends AbstractOozieMojo {
 
     private void preparePackageJob() throws MojoExecutionException {
 
-    	psh = new PigScriptExtractor( new ConfigurationReader(descriptors, getLog()).readConfiguration() , getLog(), omp_debbug );
+    	psh = new PigScriptExtractor( new ConfigurationReader(descriptors, getLog(), buildDirectory).readConfiguration() , getLog(), omp_debbug );
     	
         if (!jobPackage && (skipTests || skipITs)) {
             getLog().info("Ozzie job package has not been prepared.");

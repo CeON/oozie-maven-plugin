@@ -1,6 +1,6 @@
 package pl.edu.icm.maven.oozie.plugin.pigscripts;
 
-import java.io.File; 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,21 +16,22 @@ import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 
 import org.apache.maven.plugin.logging.Log;
-
 import org.xml.sax.SAXException;
 
 import pl.edu.icm.maven.oozie.plugin.pigscripts.configuration.OozieMavenPluginType;
 
 public class ConfigurationReader {
 	
-	String[] descriptors;
-	org.apache.maven.plugin.logging.Log log;
+	private String buildDirectory;
+	private String[] descriptors;
+	private Log log;
 	
-	public ConfigurationReader(String [] descriptors, Log log){
+	public ConfigurationReader(String [] descriptors, Log log, String buildDirectory){
+		this.buildDirectory = buildDirectory;
 		this.descriptors = descriptors;
 		this.log = log;
 	}
-	
+
 	public OozieMavenPluginType readConfiguration() {
 		
 		if(descriptors == null || descriptors.length==0){
@@ -44,12 +45,15 @@ public class ConfigurationReader {
 		    Schema schema = factory.newSchema(new StreamSource(getClass().getClassLoader().getResourceAsStream("xsd/descriptor-1.0.xsd")));
 		    //validate descriptor
 		    Validator validator = schema.newValidator();
-		    validator.validate(new StreamSource(descriptors[0]));
+		    
+		    File parent = new File(buildDirectory).getParentFile();
+		    
+		    validator.validate(new StreamSource(new File(parent, descriptors[0])));
 		    //read descriptor
 			JAXBContext jaxbContext = JAXBContext.newInstance(OozieMavenPluginType.class);
 			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 			unmarshaller.setSchema(schema);
-			InputStream reader = new FileInputStream(new File(descriptors[0]));
+			InputStream reader = new FileInputStream(new File(parent, descriptors[0]));
 			JAXBElement<OozieMavenPluginType> root = unmarshaller.unmarshal(new StreamSource(reader), OozieMavenPluginType.class);
 			log.info("Selected configuration descriptor is correct. Advanced extraction procedure is selected");
 			return root.getValue();
