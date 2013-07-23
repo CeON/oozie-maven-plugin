@@ -1,6 +1,7 @@
 package pl.edu.icm.maven.oozie.plugin;
 
 import java.io.IOException;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;

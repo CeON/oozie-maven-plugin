@@ -1,10 +1,8 @@
 package pl.edu.icm.maven.oozie.plugin;
 
-import java.util.Map;
-
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
 
+import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.BuildPluginManager;
