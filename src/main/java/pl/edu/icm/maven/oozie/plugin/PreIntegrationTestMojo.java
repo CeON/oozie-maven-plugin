@@ -33,7 +33,7 @@ public class PreIntegrationTestMojo extends AbstractIntegrationTestMojo {
             if (hdfsFS.exists(hdfsWorkingDirPath)) {
                 if (forceCleanOldData) {
                     getLog().warn("Path " + hdfsWorkingDirPath.toUri() + " exists within HDFS. Deleting...");
-                    hdfsFS.delete(new Path(hdfsWorkingDirURI), true);
+                    hdfsFS.delete(hdfsWorkingDirPath, true);
                 } else {
                     throw new MojoExecutionException("Path "
                             + hdfsWorkingDirPath.toUri() + " exists within HDFS "
