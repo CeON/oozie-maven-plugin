@@ -55,6 +55,9 @@ public abstract class AbstractOozieMojo extends AbstractMojo {
 	@Parameter(property = "skipCleanIT", defaultValue = "false")
 	protected boolean skipCleanIT;
 
+    @Parameter(property = "forceCleanOldData", defaultValue = "false")
+    protected boolean forceCleanOldData;
+
 	@Parameter( defaultValue = "${localRepository}", readonly = true )
 	protected ArtifactRepository localRepository;
 
