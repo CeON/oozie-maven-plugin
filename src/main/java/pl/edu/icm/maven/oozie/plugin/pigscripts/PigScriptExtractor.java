@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -15,6 +16,7 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
+import pl.edu.icm.maven.oozie.plugin.OoziePluginConstants;
 import pl.edu.icm.maven.oozie.plugin.pigscripts.configuration.DepsProjectPigType;
 import pl.edu.icm.maven.oozie.plugin.pigscripts.configuration.MainProjectPigType;
 import pl.edu.icm.maven.oozie.plugin.pigscripts.configuration.OozieMavenPluginType;
@@ -90,15 +92,75 @@ public class PigScriptExtractor {
 			String currentTreePosition, JarFile jar, JarEntry entry,
 			String name, DepsProjectPigType dppt) throws FileNotFoundException, IOException {
 		
-		if(filterFile(name, dppt.getAllScripts())) return false;
-		if(omp_debbug) log.info("uff");
+		if(omp_debbug) log.warn("GLOBAL LIB DIRECTORY: "+globalLibDirectory);
+		if(omp_debbug) log.warn("CURRENT TREE POSITION: "+currentTreePosition);
+		if(omp_debbug) log.warn("NAME: "+name);
 		
-		String finalPath = createFinalPath(name, dppt.getAllScripts());
+		String startPosition = currentTreePosition;
+		String finalPath = "";
+		for(ScriptHandlingType sht : dppt.getAllScripts()){
+			if(!currentTreePosition.matches(sht.getSrcProject())) continue;
+			if(filterFile(name, sht)) continue;
+			if(omp_debbug) log.info("uff");
+			
+			sht.getTarget();
+			if(omp_debbug) log.warn("sht.getMainDirAsDst() "+sht.getMainDirAsDst());
+			if(sht.getMainDirAsDst()==null || sht.getMainDirAsDst()!=null && !sht.getMainDirAsDst()){
+				startPosition = currentTreePosition;
+			}else{
+				String oWfDir = OoziePluginConstants.OOZIE_WF_PREPARE_PACKAGE_DIR;
+				int oozieWfStringEnd = currentTreePosition.indexOf(oWfDir)+oWfDir.length();
+				startPosition = currentTreePosition.substring(0,oozieWfStringEnd);
+			}
+			finalPath = createFinalPath(globalLibDirectory,name, sht);
+			break;
+		}
+		if(finalPath.length()==0) return false;
+		if(omp_debbug) log.warn("FINAL PATH: "+finalPath);
 		
-		copyScript(currentTreePosition, jar, entry, finalPath);
-		log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
+		copyScript(startPosition, jar, entry, finalPath);
+
 		return true;
 	}
+	
+	private String createFinalPath(String globalLibDirectory, String name, ScriptHandlingType sht) {
+		StringBuilder finalPathBuilder = new StringBuilder();
+		String tmp = sht.getTarget();
+		if(tmp != null && tmp.length()>0){
+			if(omp_debbug) log.warn("TARGET "+tmp);
+			finalPathBuilder.append(tmp);
+		}
+		tmp = sht.getRoot();
+		if(sht.isPreserve()){
+			if(omp_debbug) log.warn("[preserve] ROOT "+tmp);
+			finalPathBuilder.append(name);
+		}else{
+			if(omp_debbug) log.warn("[not preserve] ROOT "+name.substring(tmp.length()));
+			finalPathBuilder.append(name.substring(tmp.length()));
+		}
+		return finalPathBuilder.toString();
+	}
+	
+	private void copyScript(String currentTreePosition, JarFile jar,
+			JarEntry entry, String finalPath) throws IOException,
+			FileNotFoundException {
+
+		if(omp_debbug) log.warn("FILE ROOT: "+currentTreePosition);
+		
+		File target = new File(currentTreePosition,finalPath);		
+		FileUtils.forceMkdir(target.getParentFile());	
+		
+		FileOutputStream output = null;
+        try {
+            output = new FileOutputStream(target);
+            InputStream input = jar.getInputStream(entry);
+            IOUtils.copy(input, output);
+        } finally {
+            IOUtils.closeQuietly(output);
+        }
+        log.info("Copying pig script: (src)["+entry+"] (dst)["+target.getPath()+"]");
+	}
+	
 	
 	private boolean extractMainMacros(String globalLibDirectory,
 			String currentTreePosition, JarFile jar, JarEntry entry,
@@ -107,7 +169,7 @@ public class PigScriptExtractor {
 		if(filterFile(name, mppt.getMacros())) return false;
 		if(omp_debbug) log.info("uff");
 		
-		String finalPath = createFinalPath(name, mppt.getMacros());
+		String finalPath = createFinalPath(globalLibDirectory,name, mppt.getMacros());
 		
 		copyScript(currentTreePosition, jar, entry, finalPath);
 		log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
@@ -120,42 +182,11 @@ public class PigScriptExtractor {
 		if(filterFile(name, mppt.getScripts())) return false;
 		if(omp_debbug) log.info("uff");
 		
-		String finalPath = createFinalPath(name, mppt.getScripts());
+		String finalPath = createFinalPath(globalLibDirectory,name, mppt.getScripts());
 		
 		copyScript(currentTreePosition, jar, entry, finalPath);
 		log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
 		return true;
-	}
-
-	private void copyScript(String currentTreePosition, JarFile jar,
-			JarEntry entry, String finalPath) throws IOException,
-			FileNotFoundException {
-		File target = new File(currentTreePosition,finalPath);		
-		FileUtils.forceMkdir(target.getParentFile());	
-		
-		FileOutputStream output = null;
-        try {
-            output = new FileOutputStream(target);
-            InputStream input = jar.getInputStream(entry);
-            IOUtils.copy(input, output);
-        } finally {
-            IOUtils.closeQuietly(output);
-        }
-	}
-
-	private String createFinalPath(String name, ScriptHandlingType sht) {
-		StringBuilder finalPathBuilder = new StringBuilder();
-		String tmp = sht.getTarget();
-		if(tmp != null && tmp.length()>0){
-			finalPathBuilder.append(tmp);
-		}
-		tmp = sht.getRoot();
-		if(sht.isPreserve()){
-			finalPathBuilder.append(name);
-		}else{
-			finalPathBuilder.append(name.substring(tmp.length()));
-		}
-		return finalPathBuilder.toString();
 	}
 
 	/**

@@ -19,9 +19,11 @@
 
 	<xs:complexType name="scriptHandlingType">
 		<xs:sequence>
+			<xs:element name="srcProject" minOccurs="0" maxOccurs="1" type="xs:string" default=".*" />
 			<xs:element name="root" maxOccurs="1" type="xs:string" default="pig" />
 			<xs:element name="preserve" maxOccurs="1" type="xs:boolean" default="true"/>
-			<xs:element name="target" maxOccurs="1" type="xs:string" default="/"/>
+			<xs:element name="target" maxOccurs="1" type="xs:string" default=""/>
+			<xs:element name="mainDirAsDst" minOccurs="0"  maxOccurs="1" type="xs:boolean" default="false" />
 			<xs:element name="includes" minOccurs="1" maxOccurs="1" type="includesType"/>
 			<xs:element name="excludes" minOccurs="0" maxOccurs="1" type="excludesType"/>
 		</xs:sequence>
@@ -36,7 +38,7 @@
 	
 	<xs:complexType name="depsProjectPigType">
 		<xs:sequence>
-			<xs:element name="all-scripts" type="scriptHandlingType"/>
+			<xs:element name="all-scripts" type="scriptHandlingType" minOccurs="1" maxOccurs="unbounded" />
 		</xs:sequence>
 	</xs:complexType>
 
