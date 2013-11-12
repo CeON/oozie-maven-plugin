@@ -9,6 +9,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -198,19 +199,24 @@ public class PigScriptExtractor {
 		String root = sht.getRoot();
 		if(omp_debbug) log.info("root: "+root);
 		for( String include : sht.getIncludes().getInclude()){//is in includes?
-			if(omp_debbug) log.info(name+".matches("+root+include+")");
-			if (name.matches(root+include)) {//in includes
+			if(omp_debbug) log.info(name+".indexOf("+root+") != -1");
+			if(omp_debbug) log.info("Pattern.compile("+include+").matcher("+name+").find(rootIndex+"+root+".length())");
+			int rootIndex = name.indexOf(root);
+			boolean containsRoot = rootIndex!=-1; 
+			boolean containsPattern = containsRoot == true ? 
+					Pattern.compile(include).matcher(name).find(rootIndex+root.length()) : false;  
+			if (containsRoot && containsPattern) {//in includes
 				if(sht.getExcludes() != null) for( String exclude : sht.getExcludes().getExclude()){//is in excludes?
-					if(name.matches(exclude)){
-						if(omp_debbug) log.info("no_1");
+					if(Pattern.compile(exclude).matcher(name).find(rootIndex+root.length())){
+						if(omp_debbug) log.info("match inclusion and exclusion patterns");
 						return true;
 					}					
 				}
-				if(omp_debbug) log.info("yes");
+				if(omp_debbug) log.info("match inclusion pattern");
 				return false;
 			}
 		}
-		if(omp_debbug) log.info("no_2");
+		if(omp_debbug) log.info("hasn't match inclusion pattern");
 		return true;
 	}
 
