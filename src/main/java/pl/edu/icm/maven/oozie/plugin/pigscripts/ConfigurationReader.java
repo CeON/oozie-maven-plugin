@@ -42,7 +42,7 @@ public class ConfigurationReader {
 			//get schema
 			String schemaLang = "http://www.w3.org/2001/XMLSchema";
 			SchemaFactory factory = SchemaFactory.newInstance(schemaLang);
-		    Schema schema = factory.newSchema(new StreamSource(getClass().getClassLoader().getResourceAsStream("xsd/descriptor-1.0.xsd")));
+		    Schema schema = factory.newSchema(new StreamSource(getClass().getClassLoader().getResourceAsStream("xsd/descriptor-1.1.xsd")));
 		    //validate descriptor
 		    Validator validator = schema.newValidator();
 		    

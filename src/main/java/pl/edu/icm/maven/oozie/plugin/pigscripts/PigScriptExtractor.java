@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -70,10 +71,10 @@ public class PigScriptExtractor {
                     DepsProjectPigType dppt = pigScriptsConfiguration.getDepsProjectPig(); 
                     log.info("to analyse: "+entry);
                     if(pigScriptsFirstLevel){
-                    	extractMainScripts(globalLibDirectory, currentTreePosition, jar, entry, name, mppt);
+                    	extractScripts(globalLibDirectory, currentTreePosition, jar, entry, name, mppt.getScripts());
                     }else{
                     	if(omp_debbug) log.info("is deps pig script");
-                    	extractDepsScripts(globalLibDirectory, currentTreePosition, jar, entry, name, dppt);	
+                    	extractScripts(globalLibDirectory, currentTreePosition, jar, entry, name, dppt.getScripts());	
                     }
 		        }
 		    } catch (IOException ex) {
@@ -83,51 +84,39 @@ public class PigScriptExtractor {
 		pigScriptsFirstLevel = false;
 	}
 
-	private boolean extractDepsScripts(String globalLibDirectory,
+	private boolean extractScripts(String globalLibDirectory,
 			String currentTreePosition, JarFile jar, JarEntry entry,
-			String name, DepsProjectPigType dppt) throws FileNotFoundException, IOException {
+			String name, List<ScriptHandlingType> scriptsList) throws FileNotFoundException, IOException {
 		
 		if(omp_debbug) log.warn("GLOBAL LIB DIRECTORY: "+globalLibDirectory);
 		if(omp_debbug) log.warn("CURRENT TREE POSITION: "+currentTreePosition);
 		if(omp_debbug) log.warn("NAME: "+name);
-		
-		String startPosition = currentTreePosition;
-		String finalPath = "";
-		for(ScriptHandlingType sht : dppt.getScripts()){
+		boolean done = false;
+		for(ScriptHandlingType sht : scriptsList){
 			if(!currentTreePosition.matches(sht.getSrcProject())) continue;
 			if(filterFile(name, sht)) continue;
 			if(omp_debbug) log.info("uff");
-			
-			sht.getTarget();
-			if(omp_debbug) log.warn("sht.getMainDirAsDst() "+sht.getMainDirAsDst());
-			if(sht.getMainDirAsDst()==null || sht.getMainDirAsDst()!=null && !sht.getMainDirAsDst()){
-				startPosition = currentTreePosition;
-			}else{
-				String oWfDir = OoziePluginConstants.OOZIE_WF_PREPARE_PACKAGE_DIR;
-				int oozieWfStringEnd = currentTreePosition.indexOf(oWfDir)+oWfDir.length();
-				startPosition = currentTreePosition.substring(0,oozieWfStringEnd);
-			}
-			finalPath = createFinalPath(globalLibDirectory,name, sht);
-			break;
+			done=true;
+			String startPosition = extractStartPosition(currentTreePosition, sht);
+			String finalPath = createFinalPath(globalLibDirectory,name, sht);
+			if(omp_debbug) log.warn("FINAL PATH: "+finalPath);
+			copyScript(startPosition, jar, entry, finalPath);
 		}
-		if(finalPath.length()==0) return false;
-		if(omp_debbug) log.warn("FINAL PATH: "+finalPath);
-		
-		copyScript(startPosition, jar, entry, finalPath);
-
-		return true;
+		return done;
 	}
 	
-	private void extractMainScripts(String globalLibDirectory,String currentTreePosition, JarFile jar, JarEntry entry,
-			String name, MainProjectPigType mppt) throws IOException,FileNotFoundException {
-		
-		for(ScriptHandlingType sht : mppt.getScripts()){
-			if(filterFile(name, sht)) continue;
-			if(omp_debbug) log.info("uff");
-			String finalPath = createFinalPath(globalLibDirectory,name, sht);
-			copyScript(currentTreePosition, jar, entry, finalPath);
-			log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
+	private String extractStartPosition(String currentTreePosition,
+			ScriptHandlingType sht) {
+		String startPosition;
+		if(omp_debbug) log.warn("sht.getMainDirAsDst() "+sht.getMainDirAsDst());
+		if(sht.getMainDirAsDst()==null || sht.getMainDirAsDst()!=null && !sht.getMainDirAsDst()){
+			startPosition = currentTreePosition;
+		}else{
+			String oWfDir = OoziePluginConstants.OOZIE_WF_PREPARE_PACKAGE_DIR;
+			int oozieWfStringEnd = currentTreePosition.indexOf(oWfDir)+oWfDir.length();
+			startPosition = currentTreePosition.substring(0,oozieWfStringEnd);
 		}
+		return startPosition;
 	}
 	
 	private String createFinalPath(String globalLibDirectory, String name, ScriptHandlingType sht) {
