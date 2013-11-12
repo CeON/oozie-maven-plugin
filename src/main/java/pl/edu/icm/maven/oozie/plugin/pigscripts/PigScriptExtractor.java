@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -71,12 +70,7 @@ public class PigScriptExtractor {
                     DepsProjectPigType dppt = pigScriptsConfiguration.getDepsProjectPig(); 
                     log.info("to analyse: "+entry);
                     if(pigScriptsFirstLevel){
-                    	if(omp_debbug) log.info("is main pig script?");
-                    	if(extractMainScripts(globalLibDirectory, currentTreePosition, jar, entry, name, mppt)){
-                    	}else{
-                    		if(omp_debbug) log.info("is main pig macro?");
-                    		extractMainMacros(globalLibDirectory, currentTreePosition, jar, entry, name, mppt);
-                    	}
+                    	extractMainScripts(globalLibDirectory, currentTreePosition, jar, entry, name, mppt);
                     }else{
                     	if(omp_debbug) log.info("is deps pig script");
                     	extractDepsScripts(globalLibDirectory, currentTreePosition, jar, entry, name, dppt);	
@@ -99,7 +93,7 @@ public class PigScriptExtractor {
 		
 		String startPosition = currentTreePosition;
 		String finalPath = "";
-		for(ScriptHandlingType sht : dppt.getAllScripts()){
+		for(ScriptHandlingType sht : dppt.getScripts()){
 			if(!currentTreePosition.matches(sht.getSrcProject())) continue;
 			if(filterFile(name, sht)) continue;
 			if(omp_debbug) log.info("uff");
@@ -124,6 +118,18 @@ public class PigScriptExtractor {
 		return true;
 	}
 	
+	private void extractMainScripts(String globalLibDirectory,String currentTreePosition, JarFile jar, JarEntry entry,
+			String name, MainProjectPigType mppt) throws IOException,FileNotFoundException {
+		
+		for(ScriptHandlingType sht : mppt.getScripts()){
+			if(filterFile(name, sht)) continue;
+			if(omp_debbug) log.info("uff");
+			String finalPath = createFinalPath(globalLibDirectory,name, sht);
+			copyScript(currentTreePosition, jar, entry, finalPath);
+			log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
+		}
+	}
+	
 	private String createFinalPath(String globalLibDirectory, String name, ScriptHandlingType sht) {
 		StringBuilder finalPathBuilder = new StringBuilder();
 		String tmp = sht.getTarget();
@@ -132,7 +138,7 @@ public class PigScriptExtractor {
 			finalPathBuilder.append(tmp);
 		}
 		tmp = sht.getRoot();
-		if(sht.isPreserve()){
+		if(sht.getPreserve()!=null && sht.getPreserve()==true){
 			if(omp_debbug) log.warn("[preserve] ROOT "+tmp);
 			finalPathBuilder.append(name);
 		}else{
@@ -141,6 +147,8 @@ public class PigScriptExtractor {
 		}
 		return finalPathBuilder.toString();
 	}
+	
+
 	
 	private void copyScript(String currentTreePosition, JarFile jar,
 			JarEntry entry, String finalPath) throws IOException,
@@ -161,34 +169,8 @@ public class PigScriptExtractor {
         }
         log.info("Copying pig script: (src)["+entry+"] (dst)["+target.getPath()+"]");
 	}
-	
-	
-	private boolean extractMainMacros(String globalLibDirectory,
-			String currentTreePosition, JarFile jar, JarEntry entry,
-			String name, MainProjectPigType mppt) throws FileNotFoundException, IOException {
-		
-		if(filterFile(name, mppt.getMacros())) return false;
-		if(omp_debbug) log.info("uff");
-		
-		String finalPath = createFinalPath(globalLibDirectory,name, mppt.getMacros());
-		
-		copyScript(currentTreePosition, jar, entry, finalPath);
-		log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
-		return true;
-	}
 
-	private boolean extractMainScripts(String globalLibDirectory,String currentTreePosition, JarFile jar, JarEntry entry,
-			String name, MainProjectPigType mppt) throws IOException,FileNotFoundException {
-		
-		if(filterFile(name, mppt.getScripts())) return false;
-		if(omp_debbug) log.info("uff");
-		
-		String finalPath = createFinalPath(globalLibDirectory,name, mppt.getScripts());
-		
-		copyScript(currentTreePosition, jar, entry, finalPath);
-		log.info("Copying pig script: (src)["+entry+"] (dst)["+finalPath+"]");
-		return true;
-	}
+
 
 	/**
 	 * @return true if either name is not present in includes or follows exclude pattern; false otherwise 

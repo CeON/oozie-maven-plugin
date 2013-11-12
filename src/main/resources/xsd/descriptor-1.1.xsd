@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+	<xs:complexType name="includesType">
+		<xs:sequence>
+			<xs:element name="include" minOccurs="0" maxOccurs="unbounded"
+				type="xs:string" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="excludesType">
+		<xs:sequence>
+			<xs:element name="exclude" minOccurs="0" maxOccurs="unbounded"
+				type="xs:string" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="scriptHandlingType">
+		<xs:sequence>
+			<xs:element name="srcProject" minOccurs="0" maxOccurs="1"
+				type="xs:string" default=".*" />
+			<xs:element name="root" maxOccurs="1" type="xs:string"
+				default="pig" />
+			<xs:element name="preserve" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" default="false" />
+			<xs:element name="target" minOccurs="0" maxOccurs="1"
+				type="xs:string" default="" />
+			<xs:element name="mainDirAsDst" minOccurs="0" maxOccurs="1"
+				type="xs:boolean" default="false" />
+			<xs:element name="includes" minOccurs="1" maxOccurs="1"
+				type="includesType" />
+			<xs:element name="excludes" minOccurs="0" maxOccurs="1"
+				type="excludesType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="mainProjectPigType">
+		<xs:sequence>
+			<xs:element name="scripts" minOccurs="1" maxOccurs="unbounded"
+				type="scriptHandlingType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="depsProjectPigType">
+		<xs:sequence>
+			<xs:element name="scripts" minOccurs="1" maxOccurs="unbounded"
+				type="scriptHandlingType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="oozieMavenPluginType">
+		<xs:sequence>
+			<xs:element name="main-project-pig" minOccurs="0"
+				maxOccurs="1" type="mainProjectPigType" />
+			<xs:element name="deps-project-pig" minOccurs="0"
+				maxOccurs="1" type="depsProjectPigType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="oozie-maven-plugin" type="oozieMavenPluginType" />
+</xs:schema>
