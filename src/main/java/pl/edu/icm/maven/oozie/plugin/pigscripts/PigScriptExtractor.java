@@ -93,7 +93,7 @@ public class PigScriptExtractor {
 		if(omp_debbug) log.warn("NAME: "+name);
 		boolean done = false;
 		for(ScriptHandlingType sht : scriptsList){
-			if(!currentTreePosition.matches(sht.getSrcProject())) continue;
+			if(sht.getSrcProject()!=null && !currentTreePosition.matches(sht.getSrcProject())) continue;
 			if(filterFile(name, sht)) continue;
 			if(omp_debbug) log.info("uff");
 			done=true;
