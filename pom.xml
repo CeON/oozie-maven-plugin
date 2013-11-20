@@ -5,7 +5,7 @@
 	<artifactId>oozie-maven-plugin</artifactId>
 	<packaging>maven-plugin</packaging>
 	<name>Apache oozie plugin</name>
-	<version>1.2-SNAPSHOT</version>
+	<version>1.2</version>
 
     <scm>
         <connection>scm:git:ssh://git@github.com/CeON/oozie-maven-plugin.git</connection>
