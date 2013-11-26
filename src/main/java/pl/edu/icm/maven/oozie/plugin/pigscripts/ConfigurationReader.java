@@ -35,7 +35,7 @@ public class ConfigurationReader {
 	public OozieMavenPluginType readConfiguration() {
 		
 		if(descriptors == null || descriptors.length==0){
-			log.info("No configuration descriptor have been found. Default extraction procedure is selected");
+			log.info("No configuration descriptor have been found. Default extraction procedure is selected.");
 			return null;
 		}
 		try {

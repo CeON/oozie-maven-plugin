@@ -126,7 +126,7 @@ public class PigScriptExtractor {
 			if(omp_debbug) log.warn("TARGET "+tmp);
 			finalPathBuilder.append(tmp);
 		}
-		tmp = sht.getRoot();
+		tmp = checkRoot(sht.getRoot());
 		if(sht.getPreserve()!=null && sht.getPreserve()==true){
 			if(omp_debbug) log.warn("[preserve] ROOT "+tmp);
 			finalPathBuilder.append(name);
