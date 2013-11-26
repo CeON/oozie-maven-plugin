@@ -159,6 +159,13 @@ public class PigScriptExtractor {
         log.info("Copying pig script: (src)["+entry+"] (dst)["+target.getPath()+"]");
 	}
 
+	public String checkRoot(String root){
+		root = root.replaceAll("/+$", "/");
+		if(!root.matches("/$")){
+			root = root+"/";
+		}
+		return root;
+	}
 
 
 	/**
@@ -167,7 +174,7 @@ public class PigScriptExtractor {
 	private boolean filterFile(String name, ScriptHandlingType sht) {
 		if(omp_debbug) log.info("--------------------------");
 		if(omp_debbug) log.info("name: "+name);
-		String root = sht.getRoot();
+		String root = checkRoot(sht.getRoot());
 		if(omp_debbug) log.info("root: "+root);
 		for( String include : sht.getIncludes().getInclude()){//is in includes?
 			if(omp_debbug) log.info(name+".indexOf("+root+") != -1");
