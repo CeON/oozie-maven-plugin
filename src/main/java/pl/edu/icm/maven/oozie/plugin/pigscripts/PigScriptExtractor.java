@@ -53,6 +53,8 @@ public class PigScriptExtractor {
 		    throw new MojoExecutionException("unable to get artifact " + af.getGroupId() + ":" + af.getArtifactId());
 		}
 
+
+		
 		for (String artifactFile : dirContent) {
 		    String artifactPath = new File(afTmpDir, artifactFile).getPath();
 		    try {
@@ -62,8 +64,15 @@ public class PigScriptExtractor {
 		        while (entries.hasMoreElements()) {
 		            JarEntry entry = entries.nextElement();
 		            String name = entry.getName();
-		            
-		            if(!name.matches(".*pig")) continue;
+		            if(name.matches("^.*/$")){
+		            	//log.info("The filename \""+name+"\" ignored due to \"^.*/$\" regex.");
+		            	continue;
+		            }
+		            if(name.matches("^.*class$")){
+		            	//log.info("The filename \""+name+"\" ignored due to \"^.*class$\" regex.");
+		            	continue;
+		            }
+		            //if(!name.matches(".*pig")) continue;
 		            if(omp_debbug) log.info(">>>>>>>>>>>>file "+i+". >>>>>>>>>>>");
 		            i++;
 		            
@@ -74,7 +83,11 @@ public class PigScriptExtractor {
                     	extractScripts(globalLibDirectory, currentTreePosition, jar, entry, name, mppt.getScripts());
                     }else{
                     	if(omp_debbug) log.info("is deps pig script");
-                    	extractScripts(globalLibDirectory, currentTreePosition, jar, entry, name, dppt.getScripts());	
+                    	try{
+                    		extractScripts(globalLibDirectory, currentTreePosition, jar, entry, name, dppt.getScripts());
+                    	}catch(Exception e){
+                    		if(omp_debbug) log.error(e);
+                    	}
                     }
 		        }
 		    } catch (IOException ex) {
