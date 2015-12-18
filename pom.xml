@@ -5,13 +5,13 @@
 	<artifactId>oozie-maven-plugin</artifactId>
 	<packaging>maven-plugin</packaging>
 	<name>Apache oozie plugin</name>
-	<version>1.5-SNAPSHOT</version>
+	<version>1.5</version>
 
     <scm>
         <connection>scm:git:ssh://git@github.com/CeON/oozie-maven-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/CeON/oozie-maven-plugin.git</developerConnection>
         <url>https://github.com/CeON/oozie-maven-plugin</url>
-      <tag>HEAD</tag>
+      <tag>oozie-maven-plugin-1.5</tag>
   </scm>
 
     <distributionManagement>
